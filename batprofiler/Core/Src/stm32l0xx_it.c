@@ -152,14 +152,14 @@ void EXTI4_15_IRQHandler(void)
   {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_14);
     /* USER CODE BEGIN LL_EXTI_LINE_14 */
-
+    global_event |= EV_BTN0;
     /* USER CODE END LL_EXTI_LINE_14 */
   }
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_15) != RESET)
   {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
     /* USER CODE BEGIN LL_EXTI_LINE_15 */
-
+    global_event |= EV_BTN1;
     /* USER CODE END LL_EXTI_LINE_15 */
   }
   /* USER CODE BEGIN EXTI4_15_IRQn 1 */
@@ -173,7 +173,16 @@ void EXTI4_15_IRQHandler(void)
 void LPTIM1_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM1_IRQn 0 */
-
+	  if(LL_TIM_IsActiveFlag_CC1(TIM21)) {
+	    LL_TIM_ClearFlag_CC1(TIM21);
+		  LL_TIM_DisableIT_CC1(TIM21);
+	    global_event |= EV_BTN0_TIMEOUT;
+	  }
+	  if(LL_TIM_IsActiveFlag_CC2(TIM21)) {
+	    LL_TIM_ClearFlag_CC2(TIM21);
+		  LL_TIM_DisableIT_CC2(TIM21);
+	    global_event |= EV_BTN1_TIMEOUT;
+	  }
   /* USER CODE END LPTIM1_IRQn 0 */
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
@@ -199,7 +208,11 @@ void TIM21_IRQHandler(void)
 void TIM22_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM22_IRQn 0 */
-
+	if(LL_TIM_IsActiveFlag_CC1(TIM22)) {
+		LL_TIM_ClearFlag_CC1(TIM22);
+		  LL_TIM_DisableIT_CC1(TIM22);
+		global_event |= EV_PROFILER_TIMEOUT1;
+	  }
   /* USER CODE END TIM22_IRQn 0 */
   /* USER CODE BEGIN TIM22_IRQn 1 */
 

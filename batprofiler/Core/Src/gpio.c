@@ -177,5 +177,59 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+// - LED functions -------------------------------------------------------------
 
+void gpio_set_led(uint32_t led_mask) {
+	if(led_mask & LED0_MASK) {
+		LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin);
+	}
+	if(led_mask & LED1_MASK) {
+		LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
+	}
+	if(led_mask & LED2_MASK) {
+		LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
+	}
+	if(led_mask & LED3_MASK) {
+		LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
+	}
+	if(led_mask & LED4_MASK) {
+		LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin);
+	}
+	if(led_mask & LED5_MASK) {
+		LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin);
+	}
+	if(led_mask & LED6_MASK) {
+		LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin);
+	}
+	if(led_mask & LED7_MASK) {
+		LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin);
+	}
+}
+
+void gpio_clear_led(uint32_t led_mask) {
+	if(led_mask & LED0_MASK) {
+		LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
+	}
+	if(led_mask & LED1_MASK) {
+		LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
+	}
+	if(led_mask & LED2_MASK) {
+		LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
+	}
+	if(led_mask & LED3_MASK) {
+		LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
+	}
+	if(led_mask & LED4_MASK) {
+		LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
+	}
+	if(led_mask & LED5_MASK) {
+		LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
+	}
+	if(led_mask & LED6_MASK) {
+		LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
+	}
+	if(led_mask & LED7_MASK) {
+		LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
+	}
+}
 /* USER CODE END 2 */

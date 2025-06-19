@@ -63,6 +63,16 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+#define NB_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
+#define BITVALUE(x) (1 << x)
+
+extern volatile uint32_t global_event;
+#define EV_BTN0 BITVALUE(0)
+#define EV_BTN0_TIMEOUT BITVALUE(1)
+#define EV_BTN1 BITVALUE(2)
+#define EV_BTN1_TIMEOUT BITVALUE(3)
+
+#define EV_PROFILER_TIMEOUT1 BITVALUE(7)
 
 /* USER CODE END EM */
 

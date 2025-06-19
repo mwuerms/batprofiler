@@ -68,6 +68,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	uint32_t primask = 0;
+	uint32_t local_event = 0;
 
   /* USER CODE END 1 */
 
@@ -100,12 +102,68 @@ int main(void)
   MX_TIM22_Init();
   /* USER CODE BEGIN 2 */
 
+  gpio_set_led(ALL_LEDS_MASK);
+
+  tim21_start();
+  tim22_start();
+  profiler_init();
+
+  gpio_clear_led(ALL_LEDS_MASK);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(local_event & EV_BTN0) {
+	        btn0_start_single_timeout(1000);
+	        profiler_process_events(PEV_BTN0_PRESSED);
+	      }
+	      if(local_event & EV_BTN0_TIMEOUT) {
+	      	if(LL_GPIO_IsInputPinSet(BTN0_GPIO_Port, BTN0_Pin) == 0) {
+	      		// still pressed
+	      		led_clear(LED0_MASK);
+	      		profiler_process_events(PEV_BTN0_LONG);
+	      	}
+	      }
+	      if(local_event & EV_BTN1) {
+	        btn1_start_single_timeout(1000);
+	        profiler_process_events(PEV_BTN1_PRESSED);
+	      }
+	      if(local_event & EV_BTN1_TIMEOUT) {
+	      	if(LL_GPIO_IsInputPinSet(BTN1_GPIO_Port, BTN1_Pin) == 0) {
+	  			// still pressed
+	      		profiler_process_events(PEV_BTN1_LONG);
+	      	}
+	      }
+	      if(local_event & EV_PROFILER_TIMEOUT1) {
+	      	profiler_process_events(PEV_TIMEOUT);
+	      }
+
+	  		// wait for global events
+	  		while(1) {
+	  			// sync global events
+	  			primask = __get_PRIMASK();  // Save current interrupt state
+	  			__disable_irq();            // Disable all interrupts
+
+	  			local_event = global_event;
+	  			global_event = 0;
+
+	  			__set_PRIMASK(primask);     // Restore previous interrupt state
+
+	  			if(local_event) {
+	  				// process event
+	  				break;
+	  			}
+
+	  			// else go to sleep
+	  			LL_LPM_EnableSleep();  // This clears SLEEPDEEP
+
+	  			// Enter sleep mode (Wait For Interrupt)
+	  			__WFI();  // or __WFE();
+
+	  		}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

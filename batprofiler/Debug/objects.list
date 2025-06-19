@@ -1,3 +1,4 @@
+"./Core/Src/bat_profiler.o"
 "./Core/Src/gpio.o"
 "./Core/Src/lptim.o"
 "./Core/Src/main.o"

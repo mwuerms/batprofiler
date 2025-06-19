@@ -39,6 +39,19 @@ extern "C" {
 void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+#define LED0_MASK BITVALUE(0)
+#define LED1_MASK BITVALUE(1)
+#define LED2_MASK BITVALUE(2)
+#define LED3_MASK BITVALUE(3)
+#define LED4_MASK BITVALUE(4)
+#define LED5_MASK BITVALUE(5)
+#define LED6_MASK BITVALUE(6)
+#define LED7_MASK BITVALUE(7)
+
+#define ALL_LEDS_MASK (LED7_MASK|LED6_MASK|LED5_MASK|LED4_MASK|LED3_MASK|LED2_MASK|LED1_MASK|LED0_MASK)
+
+void gpio_set_led(uint32_t led_mask);
+void gpio_clear_led(uint32_t led_mask);
 
 /* USER CODE END Prototypes */
 

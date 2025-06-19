@@ -163,4 +163,106 @@ void MX_TIM22_Init(void)
 
 /* USER CODE BEGIN 1 */
 
+// - TIM2 -> pwm signal -------------------------------------------------------
+void pwm_start(uint16_t cmp) {
+  if(cmp == 0) {
+    pwm_stop();
+  }
+  else {
+    LL_TIM_OC_SetMode(TIM2, LL_TIM_CHANNEL_CH1, LL_TIM_OCMODE_PWM1);
+    LL_TIM_OC_SetCompareCH1(TIM2, cmp);
+    LL_TIM_CC_EnableChannel(TIM2, LL_TIM_CHANNEL_CH1);
+    LL_TIM_EnableCounter(TIM2);
+  }
+}
+
+void pwm_stop(void) {
+  LL_TIM_OC_SetMode(TIM2, LL_TIM_CHANNEL_CH1, LL_TIM_OCMODE_FORCED_INACTIVE);
+  LL_TIM_OC_SetCompareCH1(TIM2, 0);
+  LL_TIM_CC_EnableChannel(TIM2, LL_TIM_CHANNEL_CH1);
+  LL_TIM_DisableCounter(TIM2);
+}
+
+// - TIM21 --------------------------------------------------------------------
+/**
+ * TIM21 free running @ 1000 Hz -> 1 tick = 1 ms
+ */
+volatile uint16_t tim21_cnt;
+void tim21_start(void) {
+	LL_TIM_EnableCounter(TIM21);
+}
+
+void tim21_stop(void) {
+	LL_TIM_DisableCounter(TIM21);
+}
+
+/**
+ * TIM21.CH1
+ */
+void tim21_ch1_start_single_timeout(uint16_t ms) {
+	tim21_cnt = (uint16_t)LL_TIM_GetCounter(TIM21);
+	LL_TIM_OC_SetCompareCH1(TIM21, (uint32_t)(tim21_cnt + ms));
+	LL_TIM_ClearFlag_CC1(TIM21);
+	LL_TIM_EnableIT_CC1(TIM21);
+}
+
+void tim21_ch1_stop_timeout(void) {
+	LL_TIM_DisableIT_CC1(TIM21);
+}
+
+/**
+ * TIM21.CH2
+ */
+void tim21_ch2_start_single_timeout(uint16_t ms) {
+	tim21_cnt = (uint16_t)LL_TIM_GetCounter(TIM21);
+	LL_TIM_OC_SetCompareCH2(TIM21, (uint32_t)(tim21_cnt + ms));
+	LL_TIM_ClearFlag_CC2(TIM21);
+	LL_TIM_EnableIT_CC2(TIM21);
+}
+
+void tim21_ch2_stop_timeout(void) {
+	LL_TIM_DisableIT_CC2(TIM21);
+}
+
+// - TIM22 --------------------------------------------------------------------
+/**
+ * TIM22 free running @ 1000 Hz -> 1 tick = 1 ms
+ */
+volatile uint16_t tim22_cnt;
+void tim22_start(void) {
+	LL_TIM_EnableCounter(TIM22);
+}
+
+void tim22_stop(void) {
+	LL_TIM_DisableCounter(TIM22);
+}
+
+/**
+ * TIM22.CH1
+ */
+void tim22_ch1_start_single_timeout(uint16_t ms) {
+	tim22_cnt = (uint16_t)LL_TIM_GetCounter(TIM22);
+	LL_TIM_OC_SetCompareCH1(TIM22, (uint32_t)(tim22_cnt + ms));
+	LL_TIM_ClearFlag_CC1(TIM22);
+	LL_TIM_EnableIT_CC1(TIM22);
+}
+
+void tim22_ch1_stop_timeout(void) {
+	LL_TIM_DisableIT_CC1(TIM22);
+}
+
+/**
+ * TIM22.CH2
+ */
+void tim22_ch2_start_single_timeout(uint16_t ms) {
+	tim22_cnt = (uint16_t)LL_TIM_GetCounter(TIM22);
+	LL_TIM_OC_SetCompareCH2(TIM22, (uint32_t)(tim22_cnt + ms));
+	LL_TIM_ClearFlag_CC2(TIM22);
+	LL_TIM_EnableIT_CC2(TIM22);
+}
+
+void tim22_ch2_stop_timeout(void) {
+	LL_TIM_DisableIT_CC2(TIM22);
+}
+
 /* USER CODE END 1 */
