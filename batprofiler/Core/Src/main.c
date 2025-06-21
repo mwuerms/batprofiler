@@ -18,13 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "lptim.h"
 #include "usart.h"
 #include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "bat_profiler.h"
 
 /* USER CODE END Includes */
 
@@ -46,6 +46,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+volatile uint32_t global_event = 0;
 
 /* USER CODE END PV */
 
@@ -96,7 +97,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM2_Init();
-  MX_LPTIM1_Init();
   MX_LPUART1_UART_Init();
   MX_TIM21_Init();
   MX_TIM22_Init();
@@ -106,9 +106,9 @@ int main(void)
 
   tim21_start();
   tim22_start();
-  profiler_init();
 
   gpio_clear_led(ALL_LEDS_MASK);
+  bp_init();
 
   /* USER CODE END 2 */
 
@@ -117,28 +117,27 @@ int main(void)
   while (1)
   {
 	  if(local_event & EV_BTN0) {
-	        btn0_start_single_timeout(1000);
-	        profiler_process_events(PEV_BTN0_PRESSED);
+	        tim21_ch1_start_single_timeout(1000, EV_BTN0_TIMEOUT);
+	        bp_process_events(EV_BTN0_PRESSED);
 	      }
 	      if(local_event & EV_BTN0_TIMEOUT) {
 	      	if(LL_GPIO_IsInputPinSet(BTN0_GPIO_Port, BTN0_Pin) == 0) {
 	      		// still pressed
-	      		led_clear(LED0_MASK);
-	      		profiler_process_events(PEV_BTN0_LONG);
+	      		bp_process_events(EV_BTN0_LONG);
 	      	}
 	      }
 	      if(local_event & EV_BTN1) {
-	        btn1_start_single_timeout(1000);
-	        profiler_process_events(PEV_BTN1_PRESSED);
+	        tim21_ch2_start_single_timeout(1000, EV_BTN1_TIMEOUT);
+	        bp_process_events(EV_BTN1_PRESSED);
 	      }
 	      if(local_event & EV_BTN1_TIMEOUT) {
 	      	if(LL_GPIO_IsInputPinSet(BTN1_GPIO_Port, BTN1_Pin) == 0) {
 	  			// still pressed
-	      		profiler_process_events(PEV_BTN1_LONG);
+	      		bp_process_events(EV_BTN1_LONG);
 	      	}
 	      }
-	      if(local_event & EV_PROFILER_TIMEOUT1) {
-	      	profiler_process_events(PEV_TIMEOUT);
+	      if(local_event & EV_BPROFILER_TIMEOUT1) {
+	    	  bp_process_events(EV_TIMEOUT1);
 	      }
 
 	  		// wait for global events
@@ -193,13 +192,6 @@ void SystemClock_Config(void)
 
   }
   LL_RCC_HSI_SetCalibTrimming(16);
-  LL_RCC_LSI_Enable();
-
-   /* Wait till LSI is ready */
-  while(LL_RCC_LSI_IsReady() != 1)
-  {
-
-  }
   LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
   LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
   LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
@@ -215,7 +207,6 @@ void SystemClock_Config(void)
 
   LL_SetSystemCoreClock(16000000);
   LL_RCC_SetLPUARTClockSource(LL_RCC_LPUART1_CLKSOURCE_PCLK1);
-  LL_RCC_SetLPTIMClockSource(LL_RCC_LPTIM1_CLKSOURCE_LSI);
 }
 
 /* USER CODE BEGIN 4 */

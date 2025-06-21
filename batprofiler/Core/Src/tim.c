@@ -199,8 +199,15 @@ void tim21_stop(void) {
 /**
  * TIM21.CH1
  */
-void tim21_ch1_start_single_timeout(uint16_t ms) {
+volatile uint32_t tim21_ch1_event;
+void tim21_ch1_start_single_timeout(uint16_t ms, uint32_t ev) {
+	if(ev == 0) {
+		// no event so skip
+		return;
+	}
+	LL_TIM_DisableIT_CC1(TIM21);
 	tim21_cnt = (uint16_t)LL_TIM_GetCounter(TIM21);
+	tim21_ch1_event = ev;
 	LL_TIM_OC_SetCompareCH1(TIM21, (uint32_t)(tim21_cnt + ms));
 	LL_TIM_ClearFlag_CC1(TIM21);
 	LL_TIM_EnableIT_CC1(TIM21);
@@ -213,8 +220,15 @@ void tim21_ch1_stop_timeout(void) {
 /**
  * TIM21.CH2
  */
-void tim21_ch2_start_single_timeout(uint16_t ms) {
+volatile uint32_t tim21_ch2_event;
+void tim21_ch2_start_single_timeout(uint16_t ms, uint32_t ev) {
+	if(ev == 0) {
+		// no event so skip
+		return;
+	}
+	LL_TIM_DisableIT_CC2(TIM21);
 	tim21_cnt = (uint16_t)LL_TIM_GetCounter(TIM21);
+	tim21_ch2_event = ev;
 	LL_TIM_OC_SetCompareCH2(TIM21, (uint32_t)(tim21_cnt + ms));
 	LL_TIM_ClearFlag_CC2(TIM21);
 	LL_TIM_EnableIT_CC2(TIM21);
@@ -240,8 +254,15 @@ void tim22_stop(void) {
 /**
  * TIM22.CH1
  */
-void tim22_ch1_start_single_timeout(uint16_t ms) {
+volatile uint32_t tim22_ch1_event;
+void tim22_ch1_start_single_timeout(uint16_t ms, uint32_t ev) {
+	if(ev == 0) {
+		// no event so skip
+		return;
+	}
+	LL_TIM_DisableIT_CC1(TIM22);
 	tim22_cnt = (uint16_t)LL_TIM_GetCounter(TIM22);
+	tim22_ch1_event = ev;
 	LL_TIM_OC_SetCompareCH1(TIM22, (uint32_t)(tim22_cnt + ms));
 	LL_TIM_ClearFlag_CC1(TIM22);
 	LL_TIM_EnableIT_CC1(TIM22);
@@ -254,8 +275,15 @@ void tim22_ch1_stop_timeout(void) {
 /**
  * TIM22.CH2
  */
-void tim22_ch2_start_single_timeout(uint16_t ms) {
+volatile uint32_t tim22_ch2_event;
+void tim22_ch2_start_single_timeout(uint16_t ms, uint32_t ev) {
+	if(ev == 0) {
+		// no event so skip
+		return;
+	}
+	LL_TIM_DisableIT_CC2(TIM22);
 	tim22_cnt = (uint16_t)LL_TIM_GetCounter(TIM22);
+	tim22_ch2_event = ev;
 	LL_TIM_OC_SetCompareCH2(TIM22, (uint32_t)(tim22_cnt + ms));
 	LL_TIM_ClearFlag_CC2(TIM22);
 	LL_TIM_EnableIT_CC2(TIM22);

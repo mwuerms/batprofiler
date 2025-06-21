@@ -46,16 +46,20 @@ void pwm_stop(void);
 
 void tim21_start(void);
 void tim21_stop(void);
-void tim21_ch1_start_single_timeout(uint16_t ms);
+extern volatile uint32_t tim21_ch1_event;
+void tim21_ch1_start_single_timeout(uint16_t ms, uint32_t ev);
 void tim21_ch1_stop_timeout(void);
-void tim21_ch2_start_single_timeout(uint16_t ms);
+extern volatile uint32_t tim21_ch2_event;
+void tim21_ch2_start_single_timeout(uint16_t ms, uint32_t ev);
 void tim21_ch2_stop_timeout(void);
 
 void tim22_start(void);
 void tim22_stop(void);
-void tim22_ch1_start_single_timeout(uint16_t ms);
+extern volatile uint32_t tim22_ch1_event;
+void tim22_ch1_start_single_timeout(uint16_t ms, uint32_t ev);
 void tim22_ch1_stop_timeout(void);
-void tim22_ch2_start_single_timeout(uint16_t ms);
+extern volatile uint32_t tim22_ch2_event;
+void tim22_ch2_start_single_timeout(uint16_t ms, uint32_t ev);
 void tim22_ch2_stop_timeout(void);
 
 /* USER CODE END Prototypes */

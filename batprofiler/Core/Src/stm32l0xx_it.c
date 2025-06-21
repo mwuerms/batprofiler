@@ -22,6 +22,7 @@
 #include "stm32l0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "tim.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -168,34 +169,21 @@ void EXTI4_15_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles LPTIM1 global interrupt / LPTIM1 wake-up interrupt through EXTI line 29.
-  */
-void LPTIM1_IRQHandler(void)
-{
-  /* USER CODE BEGIN LPTIM1_IRQn 0 */
-	  if(LL_TIM_IsActiveFlag_CC1(TIM21)) {
-	    LL_TIM_ClearFlag_CC1(TIM21);
-		  LL_TIM_DisableIT_CC1(TIM21);
-	    global_event |= EV_BTN0_TIMEOUT;
-	  }
-	  if(LL_TIM_IsActiveFlag_CC2(TIM21)) {
-	    LL_TIM_ClearFlag_CC2(TIM21);
-		  LL_TIM_DisableIT_CC2(TIM21);
-	    global_event |= EV_BTN1_TIMEOUT;
-	  }
-  /* USER CODE END LPTIM1_IRQn 0 */
-  /* USER CODE BEGIN LPTIM1_IRQn 1 */
-
-  /* USER CODE END LPTIM1_IRQn 1 */
-}
-
-/**
   * @brief This function handles TIM21 global interrupt.
   */
 void TIM21_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM21_IRQn 0 */
-
+	  if(LL_TIM_IsActiveFlag_CC1(TIM21)) {
+	    LL_TIM_ClearFlag_CC1(TIM21);
+		  LL_TIM_DisableIT_CC1(TIM21);
+	    global_event |= tim21_ch1_event;
+	  }
+	  if(LL_TIM_IsActiveFlag_CC2(TIM21)) {
+	    LL_TIM_ClearFlag_CC2(TIM21);
+		  LL_TIM_DisableIT_CC2(TIM21);
+	    global_event |= tim21_ch2_event;
+	  }
   /* USER CODE END TIM21_IRQn 0 */
   /* USER CODE BEGIN TIM21_IRQn 1 */
 
@@ -211,7 +199,12 @@ void TIM22_IRQHandler(void)
 	if(LL_TIM_IsActiveFlag_CC1(TIM22)) {
 		LL_TIM_ClearFlag_CC1(TIM22);
 		  LL_TIM_DisableIT_CC1(TIM22);
-		global_event |= EV_PROFILER_TIMEOUT1;
+		global_event |= tim22_ch1_event;
+	  }
+	if(LL_TIM_IsActiveFlag_CC2(TIM22)) {
+		LL_TIM_ClearFlag_CC2(TIM22);
+		  LL_TIM_DisableIT_CC2(TIM22);
+		global_event |= tim22_ch2_event;
 	  }
   /* USER CODE END TIM22_IRQn 0 */
   /* USER CODE BEGIN TIM22_IRQn 1 */
