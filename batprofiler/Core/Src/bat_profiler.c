@@ -28,7 +28,7 @@ static inline uint16_t convert_mA_to_pwm(uint32_t iload) {
     //printf("  [0]: %u (VLOAD = VREF in mV)\n", iload);
     iload = (iload * (rdiff_r1_in_kohm + rdiff_r2_in_kohm)) / rdiff_r2_in_kohm;
     //printf("  [1]: %u (VREF_PWM in mV)\n", iload);
-    iload = (iload * 100);
+    iload = (iload * 10);
     //printf("  [2]: %u (x 100)\n", iload);
     iload = (iload) / vcc_in_mV;
     //printf("  [3]: %u (TIM_CCR for pwm)\n", iload);
