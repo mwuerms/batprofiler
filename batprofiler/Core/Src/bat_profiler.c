@@ -1,0 +1,309 @@
+/**
+ * bat profile, bp
+ * Martin Egli
+ * 2025-06-19
+ */
+#include <stdbool.h>
+#include <stddef.h>
+#include "bat_profiler.h"
+#include "tim.h"
+#include "gpio.h"
+
+/**
+ * convert a given current to timer CCR value to generate a pwm
+ * @param  iload   current to convert
+ * @return pwm timer_ccr value for pwm generation:
+ *   pwm = 0: 0.0 %
+ *   pwm = 1935: 19.35 %
+ *   pwm = 2025: 20.25 %
+ *   pwm = 10000: 100.00 %
+ */
+static const uint32_t rload_in_mohm = 100UL;
+static const uint32_t rdiff_r1_in_kohm = 560UL;
+static const uint32_t rdiff_r2_in_kohm =  10UL;
+static const uint32_t vcc_in_mV = 3000UL;
+static inline uint16_t convert_mA_to_pwm(uint32_t iload) {
+    //printf(" convert_mA_to_pwm(%u)\n", iload);
+    iload = (iload * rload_in_mohm); // VLOAD in mV
+    //printf("  [0]: %u (VLOAD = VREF in mV)\n", iload);
+    iload = (iload * (rdiff_r1_in_kohm + rdiff_r2_in_kohm)) / rdiff_r2_in_kohm;
+    //printf("  [1]: %u (VREF_PWM in mV)\n", iload);
+    iload = (iload * 100);
+    //printf("  [2]: %u (x 100)\n", iload);
+    iload = (iload) / vcc_in_mV;
+    //printf("  [3]: %u (TIM_CCR for pwm)\n", iload);
+    return iload;
+}
+
+#define BAT_PROFILE_MAX_NB_STEPS (16)
+typedef struct {
+    uint16_t nb_steps, step;
+    uint16_t pwm[BAT_PROFILE_MAX_NB_STEPS];
+    uint16_t delay_ms[BAT_PROFILE_MAX_NB_STEPS];
+} bprofile_t;
+
+#define BAT_PROFILE_MAX_NB_PROFILES (6)
+typedef struct {
+    uint16_t nb_profiles, current, state;
+    bprofile_t profiles[BAT_PROFILE_MAX_NB_PROFILES];
+} bp_ctrl_t;
+static bp_ctrl_t bp_ctrl;
+#define BAT_PROFILE_CTRL_STATE_OFF (0)
+#define BAT_PROFILE_CTRL_STATE_ON (1)
+
+/**
+ * print all bat profiles out to uart
+ */
+static void bp_print_out_profiles(void) {
+    return;
+}
+
+static void bp_start_timer(void) {
+	tim22_start();
+}
+
+
+static void bp_start_single_delay_ms(uint16_t delay_ms) {
+    if(delay_ms == 0) {
+        // error, do not start
+        return;
+    }
+    tim22_ch1_start_single_timeout(delay_ms, EV_BPROFILER_TIMEOUT1);
+}
+
+static void bp_display_states_on_leds(uint16_t state, uint16_t current_profile, uint16_t current_step) {
+    // state: LED0
+	gpio_clear_led(LED0_MASK);
+	gpio_set_led(state & 0x01);
+
+    // current_profile: LED1, 2, 3
+	gpio_clear_led(LED3_MASK|LED2_MASK|LED1_MASK);
+	gpio_set_led(((current_profile + 1) & 0x07) << 1);
+
+    // current_step: LED4, 5, 6, 7
+	gpio_clear_led(LED7_MASK|LED6_MASK|LED5_MASK|LED4_MASK);
+	gpio_set_led(((current_step + 1) & 0x0F) << 4);
+
+    return;
+}
+
+static void bp_next_profile(bp_ctrl_t *b) {
+    if(b == NULL) {
+        // error, invalid
+        return;
+    }
+    b->current++;
+    if(b->current >= b->nb_profiles) {
+        b->current = 0;
+    }
+}
+
+static void bp_next_profile_step(bprofile_t* p) {
+    if(p == NULL) {
+        // error, invalid
+        return;
+    }
+    p->step++;
+    if(p->step >= p->nb_steps) {
+        p->step = 0;
+    }
+}
+
+static void bp_set_profile_step(bprofile_t* p, uint16_t s) {
+    if(p == NULL) {
+        // error, invalid
+        return;
+    }
+    if(s >= p->nb_steps) {
+        // error, invalid step, do not set
+        return;
+    }
+    p->step = s;
+}
+
+static uint16_t bp_get_profile_delay(bprofile_t* p) {
+    if(p == NULL) {
+        // error, invalid
+        return 0;
+    }
+    return p->delay_ms[p->step];
+}
+
+static uint16_t bp_get_profile_pwm(bprofile_t* p) {
+    if(p == NULL) {
+        // error, invalid
+        return 0;
+    }
+    return p->pwm[p->step];
+}
+
+/**
+ * add pwm and delay_ms to a given profile
+ * @param    p          profile to add to
+ * @param	 len		nb elements
+ * @param    pwm        values to add to
+ * @param    delay_ms   values to add to
+ * @return   true: OK could add, false: some error happened, did not add
+ */
+static uint16_t bp_add_bat_profile(bprofile_t *p, uint16_t len, uint16_t *pwm, uint16_t *delay_ms) {
+    uint16_t n;
+    if(p == NULL) {
+        // error, invalid profile
+        return false;
+    }
+    if((len == 0) || (len > BAT_PROFILE_MAX_NB_STEPS)) {
+        // error, no elements or to many elements
+        return false;
+    }
+    p->nb_steps = len;
+    p->step = 0;
+    for(n = 0; n != len; n++) {
+        p->pwm[n] = pwm[n];
+        p->delay_ms[n] = delay_ms[n];
+    }
+    return true;
+}
+
+// - public functions ----------------------------------------------------------
+void bp_init(void) {
+    // add profiles
+	uint16_t set_pwm[BAT_PROFILE_MAX_NB_STEPS];
+	uint16_t set_del[BAT_PROFILE_MAX_NB_STEPS];
+	uint16_t n;
+
+    bp_ctrl.nb_profiles = 0;
+
+    n = 0;
+    set_pwm[n] = convert_mA_to_pwm(20);
+    set_del[n++] = 60000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+        // OK
+        bp_ctrl.nb_profiles++;
+    }
+
+    n = 0;
+	set_pwm[n] = convert_mA_to_pwm(100);
+	set_del[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+		// OK
+		bp_ctrl.nb_profiles++;
+	}
+
+	n = 0;
+	set_pwm[n] = convert_mA_to_pwm(200);
+	set_del[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+		// OK
+		bp_ctrl.nb_profiles++;
+	}
+
+	n = 0;
+	set_pwm[n] = convert_mA_to_pwm(250);
+	set_del[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+		// OK
+		bp_ctrl.nb_profiles++;
+	}
+
+    n = 0;
+    set_pwm[n] = convert_mA_to_pwm(0);
+    set_del[n++] = 10000;
+    set_pwm[n] = convert_mA_to_pwm(10);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(20);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(50);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(100);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(150);
+	set_del[n++] = 10000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+        // OK
+        bp_ctrl.nb_profiles++;
+    }
+
+    n = 0;
+	set_pwm[n] = convert_mA_to_pwm(0);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(10);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(0);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(20);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(0);
+	set_del[n++] = 10000;
+	set_pwm[n] = convert_mA_to_pwm(30);
+	set_del[n++] = 10000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+        // OK
+        bp_ctrl.nb_profiles++;
+    }
+
+    bp_ctrl.current = 0;
+    bp_ctrl.state = BAT_PROFILE_CTRL_STATE_OFF;
+
+    bp_start_timer();
+    bp_display_states_on_leds(bp_ctrl.state, bp_ctrl.current, bp_ctrl.profiles[bp_ctrl.current].step);
+}
+
+void bp_process_events(uint16_t event) {
+    if(bp_ctrl.state == BAT_PROFILE_CTRL_STATE_OFF) {
+        switch(event) {
+            case EV_BTN0_PRESSED:
+                // nothing to do
+                __NOP();
+                break;
+            case EV_BTN0_LONG:
+                // start
+                bp_ctrl.state = BAT_PROFILE_CTRL_STATE_ON;
+                // 1st step
+				bp_set_profile_step(&(bp_ctrl.profiles[bp_ctrl.current]), 0);
+				bp_start_single_delay_ms(bp_get_profile_delay(&(bp_ctrl.profiles[bp_ctrl.current])));
+				pwm_start(bp_get_profile_pwm(&(bp_ctrl.profiles[bp_ctrl.current])));
+                break;
+            case EV_BTN1_PRESSED:
+                // next profile
+                bp_next_profile(&bp_ctrl);
+                break;
+            case EV_BTN1_LONG:
+                // nothing to do
+                __NOP();
+                break;
+            case EV_TIMEOUT1:
+                // nothing to do
+                __NOP();
+                break;
+        }
+    }
+    else {
+        switch(event) {
+            case EV_BTN0_PRESSED:
+                // nothing to do
+                __NOP();
+                break;
+            case EV_BTN0_LONG:
+                // stop
+                bp_ctrl.state = BAT_PROFILE_CTRL_STATE_OFF;
+                bp_set_profile_step(&(bp_ctrl.profiles[bp_ctrl.current]), 0);
+                pwm_stop();
+                break;
+            case EV_BTN1_PRESSED:
+                // nothing to do
+                __NOP();
+                break;
+            case EV_BTN1_LONG:
+                // nothing to do
+                __NOP();
+                break;
+            case EV_TIMEOUT1:
+                // next step
+				bp_next_profile_step(&(bp_ctrl.profiles[bp_ctrl.current]));
+				bp_start_single_delay_ms(bp_get_profile_delay(&(bp_ctrl.profiles[bp_ctrl.current])));
+				pwm_start(bp_get_profile_pwm(&(bp_ctrl.profiles[bp_ctrl.current])));
+                break;
+        }
+    }
+    bp_display_states_on_leds(bp_ctrl.state, bp_ctrl.current, bp_ctrl.profiles[bp_ctrl.current].step);
+}
