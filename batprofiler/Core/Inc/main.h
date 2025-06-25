@@ -62,6 +62,8 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+#define PROGRAM_NAME "batprofiler"
+
 #define NB_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
 #define BITVALUE(x) (1 << x)
 

@@ -10,8 +10,9 @@
 
 #include "main.h"
 
-
+void bp_print_out_profiles(void);
 void bp_init(void);
+void bp_start(void);
 
 #define EV_BTN0_PRESSED (0)
 #define EV_BTN0_LONG (1)

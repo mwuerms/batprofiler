@@ -5,9 +5,10 @@
  */
 #include <stdbool.h>
 #include <stddef.h>
-#include "bat_profiler.h"
 #include "tim.h"
 #include "gpio.h"
+#include "bat_profiler.h"
+#include "str_buf.h"
 
 /**
  * convert a given current to timer CCR value to generate a pwm
@@ -38,6 +39,7 @@ static inline uint16_t convert_mA_to_pwm(uint32_t iload) {
 #define BAT_PROFILE_MAX_NB_STEPS (16)
 typedef struct {
     uint16_t nb_steps, step;
+    uint16_t iload[BAT_PROFILE_MAX_NB_STEPS];
     uint16_t pwm[BAT_PROFILE_MAX_NB_STEPS];
     uint16_t delay_ms[BAT_PROFILE_MAX_NB_STEPS];
 } bprofile_t;
@@ -54,8 +56,94 @@ static bp_ctrl_t bp_ctrl;
 /**
  * print all bat profiles out to uart
  */
-static void bp_print_out_profiles(void) {
-    return;
+#define BP_STR_SIZE (128)
+static char bp_str[BP_STR_SIZE];
+#define uart_send_string_blocking(...)
+void bp_print_out_profiles(void) {
+    uint16_t i, n;
+    str_buf_clear(bp_str, BP_STR_SIZE);
+	str_buf_append_string(bp_str, BP_STR_SIZE, "\navailable profiles: ");
+    str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.nb_profiles);
+    str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+    uart_send_string_blocking(bp_str);
+
+    if(bp_ctrl.nb_profiles == 0) {
+        // error, no profiles available
+        str_buf_clear(bp_str, BP_STR_SIZE);
+	    str_buf_append_string(bp_str, BP_STR_SIZE, "\n!there are none!\n");
+        uart_send_string_blocking(bp_str);
+        return;
+    }
+
+    for(i = 0; i < bp_ctrl.nb_profiles; i++) {
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_string(bp_str, BP_STR_SIZE, " + profile: ");
+        str_buf_append_uint16(bp_str, BP_STR_SIZE, i);
+        str_buf_append_string(bp_str, BP_STR_SIZE, "\n   + nb steps: ");
+        str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].nb_steps);
+        str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+        uart_send_string_blocking(bp_str);
+
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_string(bp_str, BP_STR_SIZE, "   + iload: ");
+        uart_send_string_blocking(bp_str);
+        
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_char(bp_str, BP_STR_SIZE, '[');
+        for(n = 0; n < bp_ctrl.profiles[i].nb_steps; n++) {
+            str_buf_append_uint16(bp_str, BP_STR_SIZE, n);
+            str_buf_append_string(bp_str, BP_STR_SIZE, "]: ");
+            str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].iload[n]);
+            if(n == (bp_ctrl.profiles[i].nb_steps -1)) {
+                // last
+                str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+            }
+            else {
+                str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
+            }
+        }
+        uart_send_string_blocking(bp_str);
+
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_string(bp_str, BP_STR_SIZE, "   + pwm: ");
+        uart_send_string_blocking(bp_str);
+
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_char(bp_str, BP_STR_SIZE, '[');
+        for(n = 0; n < bp_ctrl.profiles[i].nb_steps; n++) {
+            str_buf_append_uint16(bp_str, BP_STR_SIZE, n);
+            str_buf_append_string(bp_str, BP_STR_SIZE, "]: ");
+            str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].pwm[n]);
+            if(n == (bp_ctrl.profiles[i].nb_steps -1)) {
+                // last
+                str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+            }
+            else {
+                str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
+            }
+        }
+        uart_send_string_blocking(bp_str);
+
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_string(bp_str, BP_STR_SIZE, "   + delay_ms: ");
+        uart_send_string_blocking(bp_str);
+
+        str_buf_clear(bp_str, BP_STR_SIZE);
+        str_buf_append_char(bp_str, BP_STR_SIZE, '[');
+        for(n = 0; n < bp_ctrl.profiles[i].nb_steps; n++) {
+            str_buf_append_uint16(bp_str, BP_STR_SIZE, n);
+            str_buf_append_string(bp_str, BP_STR_SIZE, "]: ");
+            str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].delay_ms[n]);
+            if(n == (bp_ctrl.profiles[i].nb_steps -1)) {
+                // last
+                str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+            }
+            else {
+                str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
+            }
+        }
+        uart_send_string_blocking(bp_str);
+    }
 }
 
 static void bp_start_timer(void) {
@@ -138,14 +226,14 @@ static uint16_t bp_get_profile_pwm(bprofile_t* p) {
 }
 
 /**
- * add pwm and delay_ms to a given profile
+ * add iload and delay_ms to a given profile, and convert iload to pwm value
  * @param    p          profile to add to
  * @param	 len		nb elements
- * @param    pwm        values to add to
+ * @param    iload      values to add to
  * @param    delay_ms   values to add to
  * @return   true: OK could add, false: some error happened, did not add
  */
-static uint16_t bp_add_bat_profile(bprofile_t *p, uint16_t len, uint16_t *pwm, uint16_t *delay_ms) {
+static uint16_t bp_add_bat_profile(bprofile_t *p, uint16_t len, uint16_t *iload, uint16_t *delay_ms) {
     uint16_t n;
     if(p == NULL) {
         // error, invalid profile
@@ -158,7 +246,8 @@ static uint16_t bp_add_bat_profile(bprofile_t *p, uint16_t len, uint16_t *pwm, u
     p->nb_steps = len;
     p->step = 0;
     for(n = 0; n != len; n++) {
-        p->pwm[n] = pwm[n];
+        p->iload[n] = iload[n];
+        p->pwm[n] = convert_mA_to_pwm(iload[n]);
         p->delay_ms[n] = delay_ms[n];
     }
     return true;
@@ -167,83 +256,89 @@ static uint16_t bp_add_bat_profile(bprofile_t *p, uint16_t len, uint16_t *pwm, u
 // - public functions ----------------------------------------------------------
 void bp_init(void) {
     // add profiles
-	uint16_t set_pwm[BAT_PROFILE_MAX_NB_STEPS];
-	uint16_t set_del[BAT_PROFILE_MAX_NB_STEPS];
+    uint16_t set_iload[BAT_PROFILE_MAX_NB_STEPS];
+	uint16_t set_delay_ms[BAT_PROFILE_MAX_NB_STEPS];
 	uint16_t n;
 
     bp_ctrl.nb_profiles = 0;
 
     n = 0;
-    set_pwm[n] = convert_mA_to_pwm(20);
-    set_del[n++] = 60000;
-    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+    set_iload[n] = 20;
+    set_delay_ms[n++] = 60000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
         bp_ctrl.nb_profiles++;
     }
 
     n = 0;
-	set_pwm[n] = convert_mA_to_pwm(100);
-	set_del[n++] = 60000;
-	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+	set_iload[n] = 100;
+	set_delay_ms[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
 	}
 
 	n = 0;
-	set_pwm[n] = convert_mA_to_pwm(200);
-	set_del[n++] = 60000;
-	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+	set_iload[n] = 200;
+	set_delay_ms[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
 	}
 
 	n = 0;
-	set_pwm[n] = convert_mA_to_pwm(250);
-	set_del[n++] = 60000;
-	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+	set_iload[n] = 250;
+	set_delay_ms[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
 	}
 
     n = 0;
-    set_pwm[n] = convert_mA_to_pwm(0);
-    set_del[n++] = 10000;
-    set_pwm[n] = convert_mA_to_pwm(10);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(20);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(50);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(100);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(150);
-	set_del[n++] = 10000;
-    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+    set_iload[n] = 0;
+    set_delay_ms[n++] = 10000;
+    set_iload[n] = 10;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 20;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 50;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 100;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 150;
+	set_delay_ms[n++] = 10000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
         bp_ctrl.nb_profiles++;
     }
 
     n = 0;
-	set_pwm[n] = convert_mA_to_pwm(0);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(10);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(0);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(20);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(0);
-	set_del[n++] = 10000;
-	set_pwm[n] = convert_mA_to_pwm(30);
-	set_del[n++] = 10000;
-    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_pwm, set_del) == true) {
+	set_iload[n] = 0;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 10;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 0;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 20;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 0;
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 30;
+	set_delay_ms[n++] = 10000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
         bp_ctrl.nb_profiles++;
     }
+}
 
+void bp_start(void) {
     bp_ctrl.current = 0;
     bp_ctrl.state = BAT_PROFILE_CTRL_STATE_OFF;
 
+    str_buf_clear(bp_str, BP_STR_SIZE);
+    str_buf_append_string(bp_str, BP_STR_SIZE, "\n starting batprofiler");
+    uart_send_string_blocking(bp_str);
+    
     bp_start_timer();
     bp_display_states_on_leds(bp_ctrl.state, bp_ctrl.current, bp_ctrl.profiles[bp_ctrl.current].step);
 }
@@ -307,3 +402,52 @@ void bp_process_events(uint16_t event) {
     }
     bp_display_states_on_leds(bp_ctrl.state, bp_ctrl.current, bp_ctrl.profiles[bp_ctrl.current].step);
 }
+
+
+#warning ___TODO_ put to uart.c
+/*
+adjust, code for stm32f103
+uint16_t uart_init(void) {
+    MX_USART1_UART_Init();
+    fifo_init(&(uart_ctrl.tx_fifo), uart_tx_buffer, UART_BUFFER_SIZE);
+    return true;
+}
+
+uint16_t uart_send_buffer(uint8_t *buffer, uint16_t length) {
+    uint16_t n;
+    for(n = 0; n < length; n++) {
+        if(fifo_try_append(&(uart_ctrl.tx_fifo)) == false) {
+            // fifo is full, stop here
+            break;
+        }
+        ((uint8_t *)(uart_ctrl.tx_fifo.data))[uart_ctrl.tx_fifo.wr_proc] = buffer[n];
+        fifo_finalize_append(&(uart_ctrl.tx_fifo));
+    }
+    uart_start_transmit();
+    return n;
+}
+
+uint16_t uart_send_string(char *str) {
+    uint16_t n, len;
+    len = strlen(str);
+    for(n = 0;n < len;n++) {
+        if(str[n] == 0) {
+            // end of string found, stop here
+            break;
+        }
+        if(fifo_try_append(&(uart_ctrl.tx_fifo)) == false) {
+            // fifo is full, stop here
+            break;
+        }
+        ((uint8_t *)(uart_ctrl.tx_fifo.data))[uart_ctrl.tx_fifo.wr_proc] = str[n];
+        fifo_finalize_append(&(uart_ctrl.tx_fifo));
+    }
+
+    uart_start_transmit();
+    return n;
+}
+
+uint16_t uart_send_string_blocking(char *str) {
+// implement
+}
+*/

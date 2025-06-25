@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bat_profiler.h"
+#include "str_buf.h"
 
 /* USER CODE END Includes */
 
@@ -48,6 +49,9 @@
 /* USER CODE BEGIN PV */
 volatile uint32_t global_event = 0;
 
+#define MAIN_STR_SIZE (128)
+static char main_str[MAIN_STR_SIZE];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,6 +62,15 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void get_program_id_string(char *str, uint16_t str_size) {
+	str_buf_clear(str, str_size);
+	str_buf_append_string(str, str_size, "program id: ");
+	str_buf_append_string(str, str_size, PROGRAM_NAME);
+	str_buf_append_string(str, str_size, ", compiled: ");
+	str_buf_append_string(str, str_size, __DATE__);
+	str_buf_append_string(str, str_size, ", ");
+	str_buf_append_string(str, str_size, __TIME__);
+}
 
 /* USER CODE END 0 */
 
@@ -104,11 +117,16 @@ int main(void)
 
   gpio_set_led(ALL_LEDS_MASK);
 
+  get_program_id_string(main_str, MAIN_STR_SIZE);
+	//uart_send_string_blocking(main_str);
+
   tim21_start();
   tim22_start();
 
   gpio_clear_led(ALL_LEDS_MASK);
   bp_init();
+  bp_print_out_profiles();
+  bp_start();
 
   /* USER CODE END 2 */
 
