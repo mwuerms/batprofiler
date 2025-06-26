@@ -120,6 +120,7 @@ int main(void)
   get_program_id_string(main_str, MAIN_STR_SIZE);
 	//uart_send_string_blocking(main_str);
 
+  pwm_stop();
   tim21_start();
   tim22_start();
 

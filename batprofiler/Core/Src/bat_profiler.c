@@ -263,49 +263,51 @@ void bp_init(void) {
     bp_ctrl.nb_profiles = 0;
 
     n = 0;
-    set_iload[n] = 20;
+    set_iload[n] = 20; // FLUKE 89 IV 19.045 mA, 2025-06-24, MEgli
     set_delay_ms[n++] = 60000;
     if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
         bp_ctrl.nb_profiles++;
     }
 
-    n = 0;
+    /*n = 0;
 	set_iload[n] = 100;
 	set_delay_ms[n++] = 60000;
 	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
-	}
+	}*/
 
 	n = 0;
-	set_iload[n] = 200;
+	set_iload[n] = 200; // 185.18 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 60000;
 	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
 	}
 
-	n = 0;
+	/*n = 0;
 	set_iload[n] = 250;
 	set_delay_ms[n++] = 60000;
 	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
-	}
+	}*/
 
     n = 0;
-    set_iload[n] = 0;
+    set_iload[n] = 0; // 0.63 mA FLUKE 89 IV, 2025-06-24, MEgli
     set_delay_ms[n++] = 10000;
-    set_iload[n] = 10;
+    set_iload[n] = 10; // 9.861 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 20;
+	set_iload[n] = 20; // 19.11 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 50;
+	set_iload[n] = 50; // 46.86 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 100;
+	set_iload[n] = 100; // 92.97 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 150;
+	set_iload[n] = 150; // 139.07 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 200; // 185.18 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 10000;
     if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
