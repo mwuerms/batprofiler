@@ -82,5 +82,24 @@ void MX_LPUART1_UART_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
+#include "str_buf.h"
+uint16_t uart_send_str_buf_blocking(char *str, uint16_t str_size) {
+	uint16_t n;
+	LL_LPUART_Enable(LPUART1);
 
+	for(n = 0; n < str_size; n++) {
+		if(str[n] == STRING_TERMINATION) {
+			// done here
+			break;
+		}
+
+		// Wait until transmit data register is empty
+		while (!LL_LPUART_IsActiveFlag_TXE(LPUART1));
+		// Send a character
+		LL_LPUART_TransmitData8(LPUART1, str[n]);
+	}
+	// Wait for TC (Transmission Complete) flag to ensure last byte is sent
+	while (!LL_LPUART_IsActiveFlag_TC(LPUART1));
+    return n;
+}
 /* USER CODE END 1 */

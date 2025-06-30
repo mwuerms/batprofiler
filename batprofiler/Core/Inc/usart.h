@@ -39,7 +39,7 @@ extern "C" {
 void MX_LPUART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+uint16_t uart_send_str_buf_blocking(char *str, uint16_t str_size);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "bat_profiler.h"
 #include "str_buf.h"
+#include "usart.h"
 
 /**
  * convert a given current to timer CCR value to generate a pwm
@@ -58,20 +59,20 @@ static bp_ctrl_t bp_ctrl;
  */
 #define BP_STR_SIZE (128)
 static char bp_str[BP_STR_SIZE];
-#define uart_send_string_blocking(...)
+
 void bp_print_out_profiles(void) {
     uint16_t i, n;
     str_buf_clear(bp_str, BP_STR_SIZE);
 	str_buf_append_string(bp_str, BP_STR_SIZE, "\navailable profiles: ");
     str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.nb_profiles);
     str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
-    uart_send_string_blocking(bp_str);
+    uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
     if(bp_ctrl.nb_profiles == 0) {
         // error, no profiles available
         str_buf_clear(bp_str, BP_STR_SIZE);
 	    str_buf_append_string(bp_str, BP_STR_SIZE, "\n!there are none!\n");
-        uart_send_string_blocking(bp_str);
+	    uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
         return;
     }
 
@@ -82,11 +83,11 @@ void bp_print_out_profiles(void) {
         str_buf_append_string(bp_str, BP_STR_SIZE, "\n   + nb steps: ");
         str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].nb_steps);
         str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
         str_buf_clear(bp_str, BP_STR_SIZE);
         str_buf_append_string(bp_str, BP_STR_SIZE, "   + iload: ");
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
         
         str_buf_clear(bp_str, BP_STR_SIZE);
         str_buf_append_char(bp_str, BP_STR_SIZE, '[');
@@ -102,11 +103,11 @@ void bp_print_out_profiles(void) {
                 str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
             }
         }
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
         str_buf_clear(bp_str, BP_STR_SIZE);
         str_buf_append_string(bp_str, BP_STR_SIZE, "   + pwm: ");
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
         str_buf_clear(bp_str, BP_STR_SIZE);
         str_buf_append_char(bp_str, BP_STR_SIZE, '[');
@@ -122,11 +123,11 @@ void bp_print_out_profiles(void) {
                 str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
             }
         }
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
         str_buf_clear(bp_str, BP_STR_SIZE);
         str_buf_append_string(bp_str, BP_STR_SIZE, "   + delay_ms: ");
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
         str_buf_clear(bp_str, BP_STR_SIZE);
         str_buf_append_char(bp_str, BP_STR_SIZE, '[');
@@ -142,7 +143,7 @@ void bp_print_out_profiles(void) {
                 str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
             }
         }
-        uart_send_string_blocking(bp_str);
+        uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
     }
 }
 
@@ -263,51 +264,49 @@ void bp_init(void) {
     bp_ctrl.nb_profiles = 0;
 
     n = 0;
-    set_iload[n] = 20; // FLUKE 89 IV 19.045 mA, 2025-06-24, MEgli
+    set_iload[n] = 20;
     set_delay_ms[n++] = 60000;
     if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
         bp_ctrl.nb_profiles++;
     }
 
-    /*n = 0;
+    n = 0;
 	set_iload[n] = 100;
-	set_delay_ms[n++] = 60000;
-	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
-		// OK
-		bp_ctrl.nb_profiles++;
-	}*/
-
-	n = 0;
-	set_iload[n] = 200; // 185.18 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 60000;
 	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
 	}
 
-	/*n = 0;
+	n = 0;
+	set_iload[n] = 200;
+	set_delay_ms[n++] = 60000;
+	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
+		// OK
+		bp_ctrl.nb_profiles++;
+	}
+
+	n = 0;
 	set_iload[n] = 250;
 	set_delay_ms[n++] = 60000;
 	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
-	}*/
+	}
 
     n = 0;
-    set_iload[n] = 0; // 0.63 mA FLUKE 89 IV, 2025-06-24, MEgli
+    set_iload[n] = 0;
     set_delay_ms[n++] = 10000;
-    set_iload[n] = 10; // 9.861 mA FLUKE 89 IV, 2025-06-24, MEgli
+    set_iload[n] = 10;
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 20; // 19.11 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_iload[n] = 20;
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 50; // 46.86 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_iload[n] = 50;
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 100; // 92.97 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_iload[n] = 100;
 	set_delay_ms[n++] = 10000;
-	set_iload[n] = 150; // 139.07 mA FLUKE 89 IV, 2025-06-24, MEgli
-	set_delay_ms[n++] = 10000;
-	set_iload[n] = 200; // 185.18 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_iload[n] = 150;
 	set_delay_ms[n++] = 10000;
     if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
@@ -339,7 +338,7 @@ void bp_start(void) {
 
     str_buf_clear(bp_str, BP_STR_SIZE);
     str_buf_append_string(bp_str, BP_STR_SIZE, "\n starting batprofiler");
-    uart_send_string_blocking(bp_str);
+    uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
     
     bp_start_timer();
     bp_display_states_on_leds(bp_ctrl.state, bp_ctrl.current, bp_ctrl.profiles[bp_ctrl.current].step);
@@ -404,52 +403,3 @@ void bp_process_events(uint16_t event) {
     }
     bp_display_states_on_leds(bp_ctrl.state, bp_ctrl.current, bp_ctrl.profiles[bp_ctrl.current].step);
 }
-
-
-#warning ___TODO_ put to uart.c
-/*
-adjust, code for stm32f103
-uint16_t uart_init(void) {
-    MX_USART1_UART_Init();
-    fifo_init(&(uart_ctrl.tx_fifo), uart_tx_buffer, UART_BUFFER_SIZE);
-    return true;
-}
-
-uint16_t uart_send_buffer(uint8_t *buffer, uint16_t length) {
-    uint16_t n;
-    for(n = 0; n < length; n++) {
-        if(fifo_try_append(&(uart_ctrl.tx_fifo)) == false) {
-            // fifo is full, stop here
-            break;
-        }
-        ((uint8_t *)(uart_ctrl.tx_fifo.data))[uart_ctrl.tx_fifo.wr_proc] = buffer[n];
-        fifo_finalize_append(&(uart_ctrl.tx_fifo));
-    }
-    uart_start_transmit();
-    return n;
-}
-
-uint16_t uart_send_string(char *str) {
-    uint16_t n, len;
-    len = strlen(str);
-    for(n = 0;n < len;n++) {
-        if(str[n] == 0) {
-            // end of string found, stop here
-            break;
-        }
-        if(fifo_try_append(&(uart_ctrl.tx_fifo)) == false) {
-            // fifo is full, stop here
-            break;
-        }
-        ((uint8_t *)(uart_ctrl.tx_fifo.data))[uart_ctrl.tx_fifo.wr_proc] = str[n];
-        fifo_finalize_append(&(uart_ctrl.tx_fifo));
-    }
-
-    uart_start_transmit();
-    return n;
-}
-
-uint16_t uart_send_string_blocking(char *str) {
-// implement
-}
-*/

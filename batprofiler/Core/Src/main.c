@@ -118,9 +118,8 @@ int main(void)
   gpio_set_led(ALL_LEDS_MASK);
 
   get_program_id_string(main_str, MAIN_STR_SIZE);
-	//uart_send_string_blocking(main_str);
+  uart_send_str_buf_blocking(main_str, MAIN_STR_SIZE);
 
-  pwm_stop();
   tim21_start();
   tim22_start();
 
