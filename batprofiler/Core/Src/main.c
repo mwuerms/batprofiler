@@ -70,6 +70,7 @@ void get_program_id_string(char *str, uint16_t str_size) {
 	str_buf_append_string(str, str_size, __DATE__);
 	str_buf_append_string(str, str_size, ", ");
 	str_buf_append_string(str, str_size, __TIME__);
+	str_buf_append_string(str, str_size, "\n");
 }
 
 /* USER CODE END 0 */

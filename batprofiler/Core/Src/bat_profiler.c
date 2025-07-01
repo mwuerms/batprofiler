@@ -63,9 +63,30 @@ static char bp_str[BP_STR_SIZE];
 void bp_print_out_profiles(void) {
     uint16_t i, n;
     str_buf_clear(bp_str, BP_STR_SIZE);
-	str_buf_append_string(bp_str, BP_STR_SIZE, "\navailable profiles: ");
+	str_buf_append_string(bp_str, BP_STR_SIZE, "\n !Attention! the convert_mA_to_pwm() is inprecise!\n these are the measured vaules using FLUKE 89 IV, MEgli 2025-06-24\n");
+	uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
+
+	str_buf_clear(bp_str, BP_STR_SIZE);
+	str_buf_append_string(bp_str, BP_STR_SIZE, "iload  -> FLUKE\n");
+	str_buf_append_string(bp_str, BP_STR_SIZE, " 10 mA -> 9.86 mA\n");
+	str_buf_append_string(bp_str, BP_STR_SIZE, " 20 mA -> 19.11 mA\n");
+	str_buf_append_string(bp_str, BP_STR_SIZE, " 50 mA -> 46.86 mA\n");
+	uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
+	str_buf_clear(bp_str, BP_STR_SIZE);
+	str_buf_append_string(bp_str, BP_STR_SIZE, "100 mA -> 92.97 mA\n");
+	str_buf_append_string(bp_str, BP_STR_SIZE, "150 mA -> 139.1 mA\n");
+	str_buf_append_string(bp_str, BP_STR_SIZE, "200 mA -> 185.2 mA\n");
+	uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
+
+
+	str_buf_clear(bp_str, BP_STR_SIZE);
+	str_buf_append_string(bp_str, BP_STR_SIZE, "\npwm max: 10000\n");
+	uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
+
+    str_buf_clear(bp_str, BP_STR_SIZE);
+	str_buf_append_string(bp_str, BP_STR_SIZE, "available profiles: ");
     str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.nb_profiles);
-    str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+    str_buf_append_string(bp_str, BP_STR_SIZE, "\n");
     uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
     if(bp_ctrl.nb_profiles == 0) {
@@ -82,7 +103,7 @@ void bp_print_out_profiles(void) {
         str_buf_append_uint16(bp_str, BP_STR_SIZE, i);
         str_buf_append_string(bp_str, BP_STR_SIZE, "\n   + nb steps: ");
         str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].nb_steps);
-        str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+        str_buf_append_string(bp_str, BP_STR_SIZE, "\n");
         uart_send_str_buf_blocking(bp_str, BP_STR_SIZE);
 
         str_buf_clear(bp_str, BP_STR_SIZE);
@@ -97,7 +118,7 @@ void bp_print_out_profiles(void) {
             str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].iload[n]);
             if(n == (bp_ctrl.profiles[i].nb_steps -1)) {
                 // last
-                str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+                str_buf_append_string(bp_str, BP_STR_SIZE, "\n");
             }
             else {
                 str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
@@ -117,7 +138,7 @@ void bp_print_out_profiles(void) {
             str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].pwm[n]);
             if(n == (bp_ctrl.profiles[i].nb_steps -1)) {
                 // last
-                str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+                str_buf_append_string(bp_str, BP_STR_SIZE, "\n");
             }
             else {
                 str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
@@ -137,7 +158,7 @@ void bp_print_out_profiles(void) {
             str_buf_append_uint16(bp_str, BP_STR_SIZE, bp_ctrl.profiles[i].delay_ms[n]);
             if(n == (bp_ctrl.profiles[i].nb_steps -1)) {
                 // last
-                str_buf_append_char(bp_str, BP_STR_SIZE, '\n');
+                str_buf_append_string(bp_str, BP_STR_SIZE, "\n");
             }
             else {
                 str_buf_append_string(bp_str, BP_STR_SIZE, ", [");
@@ -264,7 +285,27 @@ void bp_init(void) {
     bp_ctrl.nb_profiles = 0;
 
     n = 0;
-    set_iload[n] = 20;
+    set_iload[n] = 0; // 0.63 mA FLUKE 89 IV, 2025-06-24, MEgli
+    set_delay_ms[n++] = 10000;
+    set_iload[n] = 10; // 9.861 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 20; // 19.11 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 50; // 46.86 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 100; // 92.97 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 150; // 139.07 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+	set_iload[n] = 200; // 185.18 mA FLUKE 89 IV, 2025-06-24, MEgli
+	set_delay_ms[n++] = 10000;
+    if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
+        // OK
+        bp_ctrl.nb_profiles++;
+    }
+
+    n = 0;
+    set_iload[n] = 20; // 19.11 mA FLUKE 89 IV, 2025-06-24, MEgli
     set_delay_ms[n++] = 60000;
     if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
         // OK
@@ -272,29 +313,13 @@ void bp_init(void) {
     }
 
     n = 0;
-	set_iload[n] = 100;
+    set_iload[n] = 200; // 185.18 mA FLUKE 89 IV, 2025-06-24, MEgli
 	set_delay_ms[n++] = 60000;
 	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
 		// OK
 		bp_ctrl.nb_profiles++;
 	}
-
-	n = 0;
-	set_iload[n] = 200;
-	set_delay_ms[n++] = 60000;
-	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
-		// OK
-		bp_ctrl.nb_profiles++;
-	}
-
-	n = 0;
-	set_iload[n] = 250;
-	set_delay_ms[n++] = 60000;
-	if(bp_add_bat_profile(&(bp_ctrl.profiles[bp_ctrl.nb_profiles]), n, set_iload, set_delay_ms) == true) {
-		// OK
-		bp_ctrl.nb_profiles++;
-	}
-
+/*
     n = 0;
     set_iload[n] = 0;
     set_delay_ms[n++] = 10000;
@@ -330,6 +355,7 @@ void bp_init(void) {
         // OK
         bp_ctrl.nb_profiles++;
     }
+*/
 }
 
 void bp_start(void) {

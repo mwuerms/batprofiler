@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (12.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -60,8 +60,8 @@ all: main-build
 main-build: batprofiler.elf secondary-outputs
 
 # Tool invocations
-batprofiler.elf batprofiler.map: $(OBJS) $(USER_OBJS) /home/martin/projects/batprofiler/batprofiler/STM32L031F6PX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "batprofiler.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"/home/martin/projects/batprofiler/batprofiler/STM32L031F6PX_FLASH.ld" --specs=nosys.specs -Wl,-Map="batprofiler.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+batprofiler.elf batprofiler.map: $(OBJS) $(USER_OBJS) D:\projects\test_equipment\batprofiler\STM32L031F6PX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "batprofiler.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"D:\projects\test_equipment\batprofiler\STM32L031F6PX_FLASH.ld" --specs=nosys.specs -Wl,-Map="batprofiler.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

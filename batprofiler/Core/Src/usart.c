@@ -68,7 +68,7 @@ void MX_LPUART1_UART_Init(void)
   /* USER CODE BEGIN LPUART1_Init 1 */
 
   /* USER CODE END LPUART1_Init 1 */
-  LPUART_InitStruct.BaudRate = 9600;
+  LPUART_InitStruct.BaudRate = 115200;
   LPUART_InitStruct.DataWidth = LL_LPUART_DATAWIDTH_8B;
   LPUART_InitStruct.StopBits = LL_LPUART_STOPBITS_1;
   LPUART_InitStruct.Parity = LL_LPUART_PARITY_NONE;
@@ -76,7 +76,7 @@ void MX_LPUART1_UART_Init(void)
   LPUART_InitStruct.HardwareFlowControl = LL_LPUART_HWCONTROL_NONE;
   LL_LPUART_Init(LPUART1, &LPUART_InitStruct);
   /* USER CODE BEGIN LPUART1_Init 2 */
-
+  LL_LPUART_Enable(LPUART1);
   /* USER CODE END LPUART1_Init 2 */
 
 }
@@ -85,7 +85,6 @@ void MX_LPUART1_UART_Init(void)
 #include "str_buf.h"
 uint16_t uart_send_str_buf_blocking(char *str, uint16_t str_size) {
 	uint16_t n;
-	LL_LPUART_Enable(LPUART1);
 
 	for(n = 0; n < str_size; n++) {
 		if(str[n] == STRING_TERMINATION) {
